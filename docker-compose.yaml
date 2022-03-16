@@ -1,0 +1,35 @@
+version: '3'
+
+services:
+    postgres:
+        image: postgres:12
+        restart: always
+        networks:
+            - backend
+        volumes:
+            - ./db_data:/var/lib/postgresql/data
+            - ./app/config/init.sql:/docker-entrypoint-initdb.d/10-init.sql
+        env_file:
+            - ./app/config/.env
+        healthcheck:
+            test: [ "CMD", "pg_isready", "-q", "-d", "devdb", "-U", "dev" ]
+            timeout: 45s
+            interval: 10s
+            retries: 10
+    
+    app:
+        build: app
+        ports:
+            - 3200:3200
+        networks:
+            - backend
+        depends_on:
+            postgres:
+                condition: service_healthy
+
+volumes:
+    db_data:
+
+networks:
+    backend:
+        driver: bridge
